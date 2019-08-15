@@ -52,26 +52,20 @@ driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "password"
 import requests
 import pyodata
 #pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org pyodata
-	   
+
+import datetime
+import re  
 
 environment = 'SW1'
 host = 'TO_BE_DEFINED'
 exec(open('./CONFIDENTIAL_'+environment+'.py').read())
 
 
-def add_infoarea(tx, name, label, parent, system, environment, ID):
-    tx.run("MERGE (a:Infoarea {name: $name, label: $label, parent: $parent, system: $system, environment: $environment, ID: $ID })",
-           name=name, label=label, parent=parent, system=system, environment=environment, ID=ID)
+def add_infoarea(tx, name, label, parent, system, environment, ID, date, user):
+    tx.run("MERGE (a:Infoarea {name: $name, label: $label, parent: $parent, system: $system, environment: $environment, ID: $ID , date: $date, user: $user })",
+           name=name, label=label, parent=parent, system=system, environment=environment, ID=ID, date=date, user=user)
 
-def delete_infoarea(tx):
-    tx.run("MATCH n = (p:Infoarea) "
-		   "DETACH DELETE n")
-		   
-def connect_infoarea(tx):
-    tx.run("MATCH (e:infoarea),(p:infoarea) "
-			"WHERE e.name = p.parent "
-			"CREATE (e)-[:Contient]->(p)")
-
+# extract system name from infoarea name
 def  infoarea_system_name(system):
 	if system[0:4] == '/IMO':
 		system = 'CO'
@@ -80,6 +74,19 @@ def  infoarea_system_name(system):
 	else:
 		system = 'NULL'
 	return(system)
+
+# convert sap odata date format to a string date format
+def odata_date2string(conttimestmp):
+	try:
+		matches = re.match(r"^/Date\((.*)\+0000\)/$", conttimestmp)
+		value = matches.group(1)
+		#print(value, int(value))
+		value = datetime.datetime(1970, 1, 1) + datetime.timedelta(milliseconds=int(value))
+		#print(type(value))
+		result = value.strftime('%Y-%m-%d %H:%M:%S')
+	except:
+		result = ''
+	return(result)
 
 # odata feed connection
 		   
@@ -101,9 +108,10 @@ print('BW_RSDAREA_CDS:', BW_RSDAREA_CDS.entity_sets.xSAAQxBW_RSDAREA.get_entitie
 rows = BW_RSDAREA_CDS.entity_sets.xSAAQxBW_RSDAREA.get_entities().execute()
 a = rows[0].__dict__
 print('colonnes: ', a.get('_cache'))
+#convert date
+print('conttimestmp:', odata_date2string(a.get('_cache').get('conttimestmp')))
 
 #exit()
-
 
 with driver.session() as session:
 
@@ -122,9 +130,11 @@ with driver.session() as session:
 		#print(infoarea, txtlg, infoarea_p)
 		system = infoarea_system_name(infoarea)
 		ID = environment + ' ' + system + ' ' + infoarea
+		date_str = odata_date2string(a.get('_cache').get('timestmp'))
+		user = a.get('_cache').get('tstpnm')
 		
 		#print(infoarea, objvers, txtlg, infoarea_p)
-		session.write_transaction(add_infoarea, infoarea, txtlg, infoarea_p, system, environment, ID)
+		session.write_transaction(add_infoarea, infoarea, txtlg, infoarea_p, system, environment, ID, date_str, user)
 
 	#exit()
 
