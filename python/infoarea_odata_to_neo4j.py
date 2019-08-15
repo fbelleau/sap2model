@@ -2,48 +2,6 @@
 # from francois.belleau@saaq.gouv.qc.ca
 # create Infoarea nodes in NEO4J using a CDS VIEW exposed as OData service
 
-# CDS view definition of odata feed
-'''
-@AbapCatalog.sqlViewName: '/SAAQ/RSDAREA'
-@AbapCatalog.compiler.compareFilter: true
-@AbapCatalog.preserveKey: true
-@AccessControl.authorizationCheck: #CHECK
-@EndUserText.label: 'BW_RSDAREA'
-
-@OData.publish: true
-@VDM.viewType: #CONSUMPTION
-
-define view /SAAQ/BW_RSDAREA as select from rsdarea 
-association [0..1] to rsdareat as A on $projection.infoarea = A.infoarea and $projection.objvers = A.objvers and A.langu = 'F'
-association [0..1] to rsdareat as B on $projection.infoarea_p = B.infoarea and $projection.objvers = B.objvers and B.langu = 'F'
-//left outer join rsdareat on     rsdarea.infoarea = rsdareat.infoarea
-//inner join rsdareat on     rsdarea.infoarea = rsdareat.infoarea
-//                              and rsdarea.objvers = rsdareat.objvers
-//                              and rsdareat.langu = 'F'                                                
-{
-//rsdarea 
-key rsdarea.infoarea, 
-key rsdarea.objvers, 
- objstat, 
- contrel, 
- conttimestmp, 
- owner, 
- bwappl, 
- infoarea_p, 
- infoarea_c, 
- infoarea_n, 
- tstpnm, 
- timestmp,
-
-A.txtsh, 
-A.txtlg,
-
-B.txtsh as txtsh_p, 
-B.txtlg as txtlg_p
-}
-where objvers = 'A'
-'''
-
 from neo4j import GraphDatabase
 #pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org neo4j
 
@@ -108,17 +66,25 @@ print('BW_RSDAREA_CDS:', BW_RSDAREA_CDS.entity_sets.xSAAQxBW_RSDAREA.get_entitie
 rows = BW_RSDAREA_CDS.entity_sets.xSAAQxBW_RSDAREA.get_entities().execute()
 a = rows[0].__dict__
 print('colonnes: ', a.get('_cache'))
-#convert date
-print('conttimestmp:', odata_date2string(a.get('_cache').get('conttimestmp')))
+
+infoarea = a.get('_cache').get('infoarea')
+txtlg = a.get('_cache').get('txtlg')
+infoarea_p = a.get('_cache').get('infoarea_p')
+system = infoarea_system_name(infoarea)
+ID = environment + ' ' + system + ' ' + infoarea
+date_str = odata_date2string(a.get('_cache').get('timestmp'))
+user = a.get('_cache').get('tstpnm')
+print(infoarea, txtlg, infoarea_p, system, environment, ID, date_str, user)
 
 #exit()
 
+print('LOADING')
 with driver.session() as session:
 
 	# delete existing node collection
-	result = session.run("MATCH n = (p:Infoarea) "
-						"DETACH DELETE n")
-	#print(result)
+	result = session.run("MATCH n = (p:Infoarea) DETACH DELETE n")
+	print('LOADING')
+	print(result)
 
 	# create nodes from odata feeed
 	for data in BW_RSDAREA_CDS.entity_sets.xSAAQxBW_RSDAREA.get_entities().execute():
@@ -139,7 +105,5 @@ with driver.session() as session:
 	#exit()
 
 	# create parent relationship
-	result = session.run("MATCH (e:Infoarea),(p:Infoarea) "
-						"WHERE e.name = p.parent "
-						"CREATE (e)-[:Infoarea_contient]->(p)")
+	result = session.run("MATCH (e:Infoarea),(p:Infoarea) WHERE e.name = p.parent CREATE (e)-[:Infoarea_contient]->(p)")
 	#print(result)
