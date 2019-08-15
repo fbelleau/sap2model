@@ -78,15 +78,14 @@ print(infoarea, txtlg, infoarea_p, system, environment, ID, date_str, user)
 
 #exit()
 
-print('LOADING')
 with driver.session() as session:
 
 	# delete existing node collection
+	print('DELETING')
 	result = session.run("MATCH n = (p:Infoarea) DETACH DELETE n")
-	print('LOADING')
-	print(result)
 
 	# create nodes from odata feeed
+	print('LOADING')
 	for data in BW_RSDAREA_CDS.entity_sets.xSAAQxBW_RSDAREA.get_entities().execute():
 		a = data.__dict__
 		#print(a)
@@ -105,5 +104,5 @@ with driver.session() as session:
 	#exit()
 
 	# create parent relationship
+	print('CONNECTING')
 	result = session.run("MATCH (e:Infoarea),(p:Infoarea) WHERE e.name = p.parent CREATE (e)-[:Infoarea_contient]->(p)")
-	#print(result)
