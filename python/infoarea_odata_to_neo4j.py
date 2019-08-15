@@ -14,11 +14,6 @@ import pyodata
 import datetime
 import re  
 
-environment = 'SW1'
-host = 'TO_BE_DEFINED'
-exec(open('./CONFIDENTIAL_'+environment+'.py').read())
-
-
 def add_infoarea(tx, name, label, parent, system, environment, ID, date, user):
     tx.run("MERGE (a:Infoarea {name: $name, label: $label, parent: $parent, system: $system, environment: $environment, ID: $ID , date: $date, user: $user })",
            name=name, label=label, parent=parent, system=system, environment=environment, ID=ID, date=date, user=user)
@@ -47,23 +42,34 @@ def odata_date2string(conttimestmp):
 	return(result)
 
 # odata feed connection
+
+#environment = 'S41'
+environment = 'SW1'
+host = 'TO_BE_DEFINED'
+exec(open('./CONFIDENTIAL_'+environment+'.py').read())
 		   
 SERVICE_URL = 'http://' + host + '/sap/opu/odata/SAAQ/BW_RSDAREA_CDS'
+EntityName = 'xSAAQxBW_RSDAREA'
+#SERVICE_URL = 'http://' + host + '/sap/opu/odata/sap/Z001_RSDAREA_CDS'
+#EntityName = 'Z001_RSDAREA'
 
 print('OData service URL:', SERVICE_URL)
 
 session = requests.Session()
 session.auth = requests_auth
 
-BW_RSDAREA_CDS = pyodata.Client(SERVICE_URL, session)
+odata_feed = pyodata.Client(SERVICE_URL, session)
 
 # number of entries
-print('BW_RSDAREA_CDS:', BW_RSDAREA_CDS.entity_sets.xSAAQxBW_RSDAREA.get_entities().count().execute())
+#print('xSAAQxBW_RSDAREA:', odata_feed.entity_sets.Z001_RSDAREA.get_entities().count().execute())
+print('xSAAQxBW_RSDAREA:', odata_feed.entity_sets.xSAAQxBW_RSDAREA.get_entities().count().execute())
 
 #exit()
 
 # list column names
-rows = BW_RSDAREA_CDS.entity_sets.xSAAQxBW_RSDAREA.get_entities().execute()
+rows = odata_feed.entity_sets.xSAAQxBW_RSDAREA.get_entities().execute()
+#rows = odata_feed.entity_sets.Z001_RSDAREA.get_entities().execute()
+
 a = rows[0].__dict__
 print('colonnes: ', a.get('_cache'))
 
@@ -74,7 +80,7 @@ system = infoarea_system_name(infoarea)
 ID = environment + ' ' + system + ' ' + infoarea
 date_str = odata_date2string(a.get('_cache').get('timestmp'))
 user = a.get('_cache').get('tstpnm')
-print(infoarea, txtlg, infoarea_p, system, environment, ID, date_str, user)
+print(infoarea, txtlg, infoarea_p, system, environment, ID, date_str, user, environment)
 
 #exit()
 
@@ -86,7 +92,9 @@ with driver.session() as session:
 
 	# create nodes from odata feeed
 	print('LOADING')
-	for data in BW_RSDAREA_CDS.entity_sets.xSAAQxBW_RSDAREA.get_entities().execute():
+
+#	for data in odata_feed.entity_sets.Z001_RSDAREA.get_entities().execute():
+	for data in odata_feed.entity_sets.xSAAQxBW_RSDAREA.get_entities().execute():
 		a = data.__dict__
 		#print(a)
 		infoarea = a.get('_cache').get('infoarea')
