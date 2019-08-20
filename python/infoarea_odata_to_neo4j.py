@@ -71,15 +71,15 @@ rows = odata_feed.entity_sets.xSAAQxBW_RSDAREA.get_entities().execute()
 #rows = odata_feed.entity_sets.Z001_RSDAREA.get_entities().execute()
 
 a = rows[0].__dict__
-print('colonnes: ', a.get('_cache'))
+print('colonnes: ', a['_cache'])
 
-infoarea = a.get('_cache').get('infoarea')
-txtlg = a.get('_cache').get('txtlg')
-infoarea_p = a.get('_cache').get('infoarea_p')
+infoarea = a['_cache']['infoarea']
+txtlg = a['_cache']['txtlg']
+infoarea_p = a['_cache']['infoarea_p']
 system = infoarea_system_name(infoarea)
 ID = environment + ' ' + system + ' ' + infoarea
-date_str = odata_date2string(a.get('_cache').get('timestmp'))
-user = a.get('_cache').get('tstpnm')
+date_str = odata_date2string(a['_cache']['timestmp'])
+user = a['_cache']['tstpnm']
 print(infoarea, txtlg, infoarea_p, system, environment, ID, date_str, user, environment)
 
 #exit()
@@ -97,14 +97,14 @@ with driver.session() as session:
 	for data in odata_feed.entity_sets.xSAAQxBW_RSDAREA.get_entities().execute():
 		a = data.__dict__
 		#print(a)
-		infoarea = a.get('_cache').get('infoarea')
-		txtlg = a.get('_cache').get('txtlg')
-		infoarea_p = a.get('_cache').get('infoarea_p')
+		infoarea = a['_cache']['infoarea']
+		txtlg = a['_cache']['txtlg']
+		infoarea_p = a['_cache']['infoarea_p']
 		#print(infoarea, txtlg, infoarea_p)
 		system = infoarea_system_name(infoarea)
 		ID = environment + ' ' + system + ' ' + infoarea
-		date_str = odata_date2string(a.get('_cache').get('timestmp'))
-		user = a.get('_cache').get('tstpnm')
+		date_str = odata_date2string(a['_cache']['timestmp'])
+		user = a['_cache']['tstpnm']
 		
 		#print(infoarea, objvers, txtlg, infoarea_p)
 		session.write_transaction(add_infoarea, infoarea, txtlg, infoarea_p, system, environment, ID, date_str, user)
@@ -112,5 +112,5 @@ with driver.session() as session:
 	#exit()
 
 	# create parent relationship
-	print('CONNECTING')
-	result = session.run("MATCH (e:Infoarea),(p:Infoarea) WHERE e.name = p.parent CREATE (e)-[:Infoarea_contient]->(p)")
+	print('CREATING RELATION')
+	result = session.run("MATCH (e:Infoarea),(p:Infoarea) WHERE e.name = p.parent CREATE (e)-[:Contient]->(p)")
