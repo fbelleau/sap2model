@@ -1,10 +1,14 @@
 # sap2model
 Project to create a data dictionary for SAP BW development to be explored with CYPHER graph query language
 
-Run the scripts in this order :
+Run the python scripts yo load NEO4J in this order :
 
-* dsgf
-* sdfsdf
+python infoarea_odata_to_neo4j.py
+python adso_odata_to_neo4j.py
+python adsot_odata_to_neo4j.py
+python trans_odata_to_neo4j.py
+python transfield_odata_to_neo4j.py
+python datasource_odata_to_neo4j.py
 
 Then try examples queries from the Wiki.
 
